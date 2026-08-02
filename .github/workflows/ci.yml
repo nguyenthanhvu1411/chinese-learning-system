@@ -7,9 +7,35 @@ on:
     branches: [develop, main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  lockfiles:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install --package-lock-only
+        working-directory: frontend/public-web
+      - run: npm install --package-lock-only
+        working-directory: frontend/admin-web
+      - name: Commit generated lockfiles
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public-web/package-lock.json frontend/admin-web/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfiles are already current."
+          else
+            git commit -m "chore: add frontend lockfiles"
+            git push origin HEAD:develop
+          fi
+
   public-web:
     runs-on: ubuntu-latest
     defaults:
@@ -21,10 +47,6 @@ jobs:
         with:
           node-version: 24
       - run: npm install --package-lock-only
-      - uses: actions/upload-artifact@v4
-        with:
-          name: public-web-lockfile
-          path: frontend/public-web/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
@@ -42,10 +64,6 @@ jobs:
         with:
           node-version: 24
       - run: npm install --package-lock-only
-      - uses: actions/upload-artifact@v4
-        with:
-          name: admin-web-lockfile
-          path: frontend/admin-web/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
