@@ -44,7 +44,3 @@ Không commit khóa bí mật. Khi bắt đầu tích hợp dịch vụ, sao ch�
 - `/login`: đăng nhập.
 - `/dashboard`: trang riêng tư, tự chuyển về đăng nhập nếu chưa có phiên hợp lệ.
 - `src/proxy.ts`: làm mới token phiên trên mỗi request phù hợp.
-
-## Triển khai
-
-Nhánh `main` được kết nối với Vercel để tự động triển khai môi trường Production. Project sử dụng Framework Preset `Next.js`; Root Directory và Output Directory giữ cấu hình mặc định.

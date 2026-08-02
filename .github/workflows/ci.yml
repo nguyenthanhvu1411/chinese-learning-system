@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
+      - run: dotnet restore ChineseLearning.sln
+        working-directory: backend
+      - run: dotnet build ChineseLearning.sln --configuration Release --no-restore
+        working-directory: backend
+      - run: dotnet test ChineseLearning.sln --configuration Release --no-build --logger trx
+        working-directory: backend
+      - run: docker build -t chinese-learning-api:ci .
+        working-directory: backend
