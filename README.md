@@ -47,4 +47,4 @@ Không commit khóa bí mật. Khi bắt đầu tích hợp dịch vụ, sao ch�
 
 ## Triển khai
 
-Nhánh `main` được kết nối với Vercel để tự động triển khai môi trường Production.
+Nhánh `main` được kết nối với Vercel để tự động triển khai môi trường Production. Project sử dụng Framework Preset `Next.js`; Root Directory và Output Directory giữ cấu hình mặc định.
