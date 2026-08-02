@@ -1,8 +1,10 @@
 using System.Text.Json;
 using ChineseLearning.Api.Middleware;
+using ChineseLearning.Api.Options;
 using ChineseLearning.Application;
 using ChineseLearning.Infrastructure;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +16,10 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<IValidateOptions<OpenAIOptions>, OpenAIOptionsValidator>();
+builder.Services.AddOptions<OpenAIOptions>()
+    .Bind(builder.Configuration.GetSection(OpenAIOptions.SectionName))
+    .ValidateOnStart();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
