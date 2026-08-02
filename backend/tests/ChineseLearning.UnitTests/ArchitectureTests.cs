@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace ChineseLearning.UnitTests;
 
 public sealed class ArchitectureTests
