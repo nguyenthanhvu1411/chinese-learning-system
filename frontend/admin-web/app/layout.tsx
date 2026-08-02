@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Chinese Learning Admin",
-  description: "Administration portal",
+  description: "Trang quản trị Chinese Learning System",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
