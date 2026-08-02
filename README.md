@@ -35,3 +35,12 @@ public/         # Tài nguyên tĩnh
 - Vercel: preview deployment và production deployment.
 
 Không commit khóa bí mật. Khi bắt đầu tích hợp dịch vụ, sao chép `.env.example` thành `.env.local`.
+
+## Xác thực
+
+Ứng dụng sử dụng Supabase Auth theo mô hình SSR với cookie:
+
+- `/register`: tạo tài khoản email/mật khẩu.
+- `/login`: đăng nhập.
+- `/dashboard`: trang riêng tư, tự chuyển về đăng nhập nếu chưa có phiên hợp lệ.
+- `src/proxy.ts`: làm mới token phiên trên mỗi request phù hợp.

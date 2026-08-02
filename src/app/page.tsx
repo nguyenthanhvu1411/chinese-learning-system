@@ -35,7 +35,7 @@ export default function Home() {
           <a className="transition-colors hover:text-[var(--ink)]" href="#tinh-nang">Tính năng</a>
           <a className="transition-colors hover:text-[var(--ink)]" href="#gioi-thieu">Giới thiệu</a>
         </div>
-        <Link className="rounded-full border border-[var(--line)] bg-white/70 px-5 py-2.5 text-sm font-semibold transition hover:border-[var(--red)] hover:text-[var(--red)]" href="#bat-dau">
+        <Link className="rounded-full border border-[var(--line)] bg-white/70 px-5 py-2.5 text-sm font-semibold transition hover:border-[var(--red)] hover:text-[var(--red)]" href="/login">
           Đăng nhập
         </Link>
       </nav>
@@ -54,7 +54,7 @@ export default function Home() {
             Một lộ trình học cá nhân hóa, kết hợp từ vựng, phát âm và hội thoại để bạn tự tin sử dụng tiếng Trung trong đời sống.
           </p>
           <div id="bat-dau" className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Link className="rounded-full bg-[var(--red)] px-7 py-3.5 text-center text-sm font-semibold text-white shadow-[0_12px_30px_rgba(184,49,45,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--red-dark)]" href="#lo-trinh">
+            <Link className="rounded-full bg-[var(--red)] px-7 py-3.5 text-center text-sm font-semibold text-white shadow-[0_12px_30px_rgba(184,49,45,0.24)] transition hover:-translate-y-0.5 hover:bg-[var(--red-dark)]" href="/register">
               Bắt đầu học miễn phí
             </Link>
             <Link className="rounded-full border border-[var(--line)] bg-white/65 px-7 py-3.5 text-center text-sm font-semibold transition hover:bg-white" href="#tinh-nang">
