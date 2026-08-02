@@ -6,7 +6,6 @@ RUN dotnet publish src/ChineseLearning.Api/ChineseLearning.Api.csproj -c Release
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS final
 WORKDIR /app
-RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /app/publish .
 USER app
 ENV ASPNETCORE_URLS=http://+:8080
