@@ -20,9 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/public-web/package-lock.json
       - run: npm install --package-lock-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-web-lockfile
+          path: frontend/public-web/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
@@ -39,9 +41,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/admin-web/package-lock.json
       - run: npm install --package-lock-only
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-web-lockfile
+          path: frontend/admin-web/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run type-check
