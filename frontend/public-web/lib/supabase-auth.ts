@@ -1,76 +1,79 @@
 export type AuthSession = {
   access_token: string;
   refresh_token: string;
-  expires_in: number;
-  expires_at?: number;
+  expires_at?: string;
   token_type: string;
-  user: { id: string; email?: string };
+  user?: { id?: string; email?: string };
 };
 
 const sessionKey = "chinese-learning.auth.session";
 
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !publishableKey) throw new Error("Thiếu cấu hình Supabase cho frontend.");
-  return { url, publishableKey };
+function apiBaseUrl() {
+  const value = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!value) throw new Error("Thiếu NEXT_PUBLIC_API_BASE_URL.");
+  return value.replace(/\/$/, "");
 }
 
 async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const { url, publishableKey } = getSupabaseConfig();
-  const response = await fetch(`${url}/auth/v1${path}`, {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/auth${path}`, {
     ...init,
-    headers: { apikey: publishableKey, "Content-Type": "application/json", ...init.headers },
+    headers: { "Content-Type": "application/json", ...init.headers },
   });
-  const payload = (await response.json().catch(() => ({}))) as T & {
-    error_description?: string;
-    msg?: string;
-    message?: string;
-  };
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error_description ?? payload.msg ?? payload.message ?? "Yêu cầu xác thực thất bại.");
+    const message = payload?.detail ?? payload?.message ?? payload?.title ?? "Yêu cầu xác thực thất bại.";
+    throw new Error(message);
   }
-  return payload;
+  return payload as T;
 }
 
-export async function signUp(email: string, password: string, redirectTo: string) {
-  return request<{ user: AuthSession["user"] | null; session: AuthSession | null }>(
-    `/signup?redirect_to=${encodeURIComponent(redirectTo)}`,
-    { method: "POST", body: JSON.stringify({ email, password }) },
-  );
+export async function signUp(email: string, password: string, _redirectTo?: string) {
+  const result = await request<{ userId: string; email: string; verificationToken?: string | null }>("/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password, displayName: email.split("@")[0] }),
+  });
+  return { user: { id: result.userId, email: result.email }, session: null, ...result };
 }
 
 export async function signIn(email: string, password: string) {
-  const session = await request<AuthSession>("/token?grant_type=password", {
+  const data = await request<{ accessToken: string; refreshToken: string; expiresAtUtc: string; tokenType: string }>("/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  const session: AuthSession = {
+    access_token: data.accessToken,
+    refresh_token: data.refreshToken,
+    expires_at: data.expiresAtUtc,
+    token_type: data.tokenType,
+  };
   saveSession(session);
   return session;
 }
 
-export async function sendPasswordReset(email: string, redirectTo: string) {
-  await request<Record<string, never>>(`/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+export async function sendPasswordReset(email: string, _redirectTo?: string) {
+  return request<{ message: string; userId?: string; resetToken?: string }>("/forgot-password", {
     method: "POST",
     body: JSON.stringify({ email }),
   });
 }
 
-export async function updatePassword(password: string, accessToken: string) {
-  const result = await request<{ user: AuthSession["user"] }>("/user", {
-    method: "PUT",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ password }),
+export async function updatePassword(password: string, recoveryValue: string) {
+  const separator = recoveryValue.indexOf("|");
+  const userId = separator >= 0 ? recoveryValue.slice(0, separator) : "";
+  const token = separator >= 0 ? recoveryValue.slice(separator + 1) : "";
+  if (!userId || !token) throw new Error("Liên kết đặt lại mật khẩu không hợp lệ.");
+  await request<void>("/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ userId, token, newPassword: password }),
   });
-  return result.user;
 }
 
 export async function signOut() {
   const session = loadSession();
-  if (session?.access_token) {
-    await request<Record<string, never>>("/logout", {
+  if (session?.refresh_token) {
+    await request<void>("/logout", {
       method: "POST",
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ refreshToken: session.refresh_token }),
     }).catch(() => undefined);
   }
   clearSession();
@@ -84,12 +87,7 @@ export function loadSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem(sessionKey);
   if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    clearSession();
-    return null;
-  }
+  try { return JSON.parse(raw) as AuthSession; } catch { clearSession(); return null; }
 }
 
 export function clearSession() {
@@ -98,25 +96,23 @@ export function clearSession() {
 
 export function readSessionFromUrl(): AuthSession | null {
   if (typeof window === "undefined") return null;
-  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const accessToken = hash.get("access_token");
-  const refreshToken = hash.get("refresh_token");
-  if (!accessToken || !refreshToken) return null;
+  const query = new URLSearchParams(window.location.search);
+  const userId = query.get("userId");
+  const token = query.get("token");
+  const next = query.get("next");
+  if (!userId || !token) return null;
+  const recovery = `${userId}|${token}`;
   const session: AuthSession = {
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    expires_in: Number(hash.get("expires_in") ?? 3600),
-    token_type: hash.get("token_type") ?? "bearer",
-    user: { id: "" },
+    access_token: recovery,
+    refresh_token: "",
+    token_type: next === "/auth/reset-password" ? "password-recovery" : "email-verification",
   };
   saveSession(session);
   return session;
 }
 
 export async function fetchCurrentUser(accessToken: string) {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!apiBaseUrl) throw new Error("Thiếu NEXT_PUBLIC_API_BASE_URL.");
-  const response = await fetch(`${apiBaseUrl}/api/v1/auth/me`, {
+  const response = await fetch(`${apiBaseUrl()}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
