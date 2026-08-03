@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  public-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/public-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/public-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+
+  admin-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/admin-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/admin-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
+      - run: dotnet restore ChineseLearning.sln
+      - run: dotnet build ChineseLearning.sln --configuration Release --no-restore
+      - run: dotnet test ChineseLearning.sln --configuration Release --no-build --logger trx
+      - run: docker build -t chinese-learning-api:ci .
