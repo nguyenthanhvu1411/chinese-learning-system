@@ -4,10 +4,7 @@ export type AuthSession = {
   expires_in: number;
   expires_at?: number;
   token_type: string;
-  user: {
-    id: string;
-    email?: string;
-  };
+  user: { id: string; email?: string };
 };
 
 const sessionKey = "chinese-learning.auth.session";
@@ -15,11 +12,7 @@ const sessionKey = "chinese-learning.auth.session";
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!url || !publishableKey) {
-    throw new Error("Thiếu cấu hình Supabase cho frontend.");
-  }
-
+  if (!url || !publishableKey) throw new Error("Thiếu cấu hình Supabase cho frontend.");
   return { url, publishableKey };
 }
 
@@ -27,33 +20,24 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   const { url, publishableKey } = getSupabaseConfig();
   const response = await fetch(`${url}/auth/v1${path}`, {
     ...init,
-    headers: {
-      apikey: publishableKey,
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
+    headers: { apikey: publishableKey, "Content-Type": "application/json", ...init.headers },
   });
-
   const payload = (await response.json().catch(() => ({}))) as T & {
     error_description?: string;
     msg?: string;
     message?: string;
   };
-
   if (!response.ok) {
-    throw new Error(
-      payload.error_description ?? payload.msg ?? payload.message ?? "Yêu cầu xác thực thất bại.",
-    );
+    throw new Error(payload.error_description ?? payload.msg ?? payload.message ?? "Yêu cầu xác thực thất bại.");
   }
-
   return payload;
 }
 
 export async function signUp(email: string, password: string, redirectTo: string) {
-  return request<{ user: AuthSession["user"] | null; session: AuthSession | null }>("/signup", {
-    method: "POST",
-    body: JSON.stringify({ email, password, options: { emailRedirectTo: redirectTo } }),
-  });
+  return request<{ user: AuthSession["user"] | null; session: AuthSession | null }>(
+    `/signup?redirect_to=${encodeURIComponent(redirectTo)}`,
+    { method: "POST", body: JSON.stringify({ email, password }) },
+  );
 }
 
 export async function signIn(email: string, password: string) {
@@ -66,9 +50,9 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function sendPasswordReset(email: string, redirectTo: string) {
-  await request<Record<string, never>>("/recover", {
+  await request<Record<string, never>>(`/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
     method: "POST",
-    body: JSON.stringify({ email, redirect_to: redirectTo }),
+    body: JSON.stringify({ email }),
   });
 }
 
@@ -93,8 +77,7 @@ export async function signOut() {
 }
 
 export function saveSession(session: AuthSession) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(sessionKey, JSON.stringify(session));
+  if (typeof window !== "undefined") window.localStorage.setItem(sessionKey, JSON.stringify(session));
 }
 
 export function loadSession(): AuthSession | null {
@@ -110,9 +93,7 @@ export function loadSession(): AuthSession | null {
 }
 
 export function clearSession() {
-  if (typeof window !== "undefined") {
-    window.localStorage.removeItem(sessionKey);
-  }
+  if (typeof window !== "undefined") window.localStorage.removeItem(sessionKey);
 }
 
 export function readSessionFromUrl(): AuthSession | null {
@@ -121,13 +102,12 @@ export function readSessionFromUrl(): AuthSession | null {
   const accessToken = hash.get("access_token");
   const refreshToken = hash.get("refresh_token");
   if (!accessToken || !refreshToken) return null;
-
   const session: AuthSession = {
     access_token: accessToken,
     refresh_token: refreshToken,
     expires_in: Number(hash.get("expires_in") ?? 3600),
     token_type: hash.get("token_type") ?? "bearer",
-    user: { id: "", email: undefined },
+    user: { id: "" },
   };
   saveSession(session);
   return session;
@@ -136,15 +116,10 @@ export function readSessionFromUrl(): AuthSession | null {
 export async function fetchCurrentUser(accessToken: string) {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (!apiBaseUrl) throw new Error("Thiếu NEXT_PUBLIC_API_BASE_URL.");
-
   const response = await fetch(`${apiBaseUrl}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
-
-  if (!response.ok) {
-    throw new Error(`Backend từ chối access token (${response.status}).`);
-  }
-
+  if (!response.ok) throw new Error(`Backend từ chối access token (${response.status}).`);
   return response.json() as Promise<Record<string, unknown>>;
 }
