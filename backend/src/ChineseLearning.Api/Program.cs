@@ -1,6 +1,7 @@
 using ChineseLearning.Api.Extensions;
 using ChineseLearning.Application;
 using ChineseLearning.Infrastructure;
+using ChineseLearning.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+await app.Services.InitialiseDatabaseAsync();
 app.UseApiPipeline();
 app.MapControllers();
 app.MapSystemEndpoints();
