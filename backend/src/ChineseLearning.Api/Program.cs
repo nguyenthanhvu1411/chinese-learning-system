@@ -16,10 +16,22 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
 builder.Services.AddSingleton<IValidateOptions<OpenAIOptions>, OpenAIOptionsValidator>();
 builder.Services.AddOptions<OpenAIOptions>()
     .Bind(builder.Configuration.GetSection(OpenAIOptions.SectionName))
     .ValidateOnStart();
+
+builder.Services.AddSingleton<IValidateOptions<SupabaseOptions>, SupabaseOptionsValidator>();
+builder.Services.AddOptions<SupabaseOptions>()
+    .Bind(builder.Configuration.GetSection(SupabaseOptions.SectionName))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IValidateOptions<DatabaseOptions>, DatabaseOptionsValidator>();
+builder.Services.AddOptions<DatabaseOptions>()
+    .Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName))
+    .ValidateOnStart();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -56,6 +68,7 @@ app.MapGet("/api/v1", (HttpContext context) => Results.Ok(new
     {
         name = "Chinese Learning API",
         version = "v1",
+        environment = app.Environment.EnvironmentName,
         correlationId = context.TraceIdentifier,
         status = "ready"
     }))
