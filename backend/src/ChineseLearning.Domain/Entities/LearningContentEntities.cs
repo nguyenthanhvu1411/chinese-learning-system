@@ -1,0 +1,65 @@
+using ChineseLearning.Domain.Common;
+using ChineseLearning.Domain.Constants;
+
+namespace ChineseLearning.Domain.Entities;
+
+public sealed class Topic : Entity
+{
+    public string Slug { get; private set; } = string.Empty;
+    public string NameVi { get; private set; } = string.Empty;
+    public string? DescriptionVi { get; private set; }
+    public int SortOrder { get; private set; }
+    public ContentStatus Status { get; private set; } = ContentStatus.Draft;
+    public ICollection<Vocabulary> Vocabularies { get; private set; } = new List<Vocabulary>();
+    public ICollection<Lesson> Lessons { get; private set; } = new List<Lesson>();
+}
+
+public sealed class Vocabulary : Entity
+{
+    public long TopicId { get; private set; }
+    public string Simplified { get; private set; } = string.Empty;
+    public string? Traditional { get; private set; }
+    public string Pinyin { get; private set; } = string.Empty;
+    public string MeaningVi { get; private set; } = string.Empty;
+    public string? PartOfSpeech { get; private set; }
+    public string? AudioUrl { get; private set; }
+    public int HskLevel { get; private set; } = 1;
+    public ContentStatus Status { get; private set; } = ContentStatus.Draft;
+    public Topic Topic { get; private set; } = null!;
+    public ICollection<VocabularyExample> Examples { get; private set; } = new List<VocabularyExample>();
+    public ICollection<LessonVocabulary> Lessons { get; private set; } = new List<LessonVocabulary>();
+}
+
+public sealed class VocabularyExample : Entity
+{
+    public long VocabularyId { get; private set; }
+    public string ChineseText { get; private set; } = string.Empty;
+    public string Pinyin { get; private set; } = string.Empty;
+    public string MeaningVi { get; private set; } = string.Empty;
+    public string? AudioUrl { get; private set; }
+    public int SortOrder { get; private set; }
+    public Vocabulary Vocabulary { get; private set; } = null!;
+}
+
+public sealed class Lesson : Entity
+{
+    public long TopicId { get; private set; }
+    public string Slug { get; private set; } = string.Empty;
+    public string TitleVi { get; private set; } = string.Empty;
+    public string? DescriptionVi { get; private set; }
+    public int EstimatedMinutes { get; private set; } = 15;
+    public int SortOrder { get; private set; }
+    public ContentStatus Status { get; private set; } = ContentStatus.Draft;
+    public Topic Topic { get; private set; } = null!;
+    public ICollection<LessonVocabulary> Vocabularies { get; private set; } = new List<LessonVocabulary>();
+    public ICollection<Quiz> Quizzes { get; private set; } = new List<Quiz>();
+}
+
+public sealed class LessonVocabulary
+{
+    public long LessonId { get; private set; }
+    public long VocabularyId { get; private set; }
+    public int SortOrder { get; private set; }
+    public Lesson Lesson { get; private set; } = null!;
+    public Vocabulary Vocabulary { get; private set; } = null!;
+}
