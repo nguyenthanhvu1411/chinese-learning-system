@@ -98,14 +98,16 @@ public sealed class AuthService(
 
     public async Task<CurrentUserResponse> GetCurrentUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(userId.ToString()) ?? throw new KeyNotFoundException("Không tìm thấy người dùng.");
-        return MapUser(user, await userManager.GetRolesAsync(user));
+        var user = await userManager.FindByIdAsync(userId.ToString())
+            ?? throw new KeyNotFoundException("Không tìm thấy người dùng.");
+        var roles = (await userManager.GetRolesAsync(user)).ToArray();
+        return MapUser(user, roles);
     }
 
     private async Task<AuthResponse> IssueTokensAsync(ApplicationUser user, CancellationToken cancellationToken)
     {
-        var roles = await userManager.GetRolesAsync(user);
-        var (accessToken, expiresAt) = await jwtTokenService.CreateAccessTokenAsync(user, roles.ToArray(), cancellationToken);
+        var roles = (await userManager.GetRolesAsync(user)).ToArray();
+        var (accessToken, expiresAt) = await jwtTokenService.CreateAccessTokenAsync(user, roles, cancellationToken);
         var refreshToken = jwtTokenService.CreateRefreshToken();
         dbContext.RefreshTokens.Add(new RefreshToken(user.Id, jwtTokenService.HashToken(refreshToken), DateTimeOffset.UtcNow.AddDays(30)));
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -117,6 +119,7 @@ public sealed class AuthService(
 
     private static void EnsureIdentitySucceeded(IdentityResult result)
     {
-        if (!result.Succeeded) throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
     }
 }
