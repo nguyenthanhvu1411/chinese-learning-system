@@ -3,11 +3,11 @@ using Xunit;
 
 namespace ChineseLearning.IntegrationTests;
 
-public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthEndpointTests : IClassFixture<IntegrationTestWebAppFactory>
 {
     private readonly HttpClient _client;
 
-    public HealthEndpointTests(WebApplicationFactory<Program> factory) => _client = factory.CreateClient();
+    public HealthEndpointTests(IntegrationTestWebAppFactory factory) => _client = factory.CreateClient();
 
     [Fact]
     public async Task Liveness_ReturnsSuccessAndCorrelationId()
