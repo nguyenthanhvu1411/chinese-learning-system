@@ -1,7 +1,6 @@
 using ChineseLearning.Application.Abstractions.Authentication;
 using ChineseLearning.Application.Abstractions.Email;
 using ChineseLearning.Application.Abstractions.Persistence;
-using ChineseLearning.Domain.Entities;
 using ChineseLearning.Infrastructure.Authentication;
 using ChineseLearning.Infrastructure.Email;
 using ChineseLearning.Infrastructure.Identity;
@@ -10,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using DomainApplicationUser = ChineseLearning.Domain.Entities.ApplicationUser;
 
 namespace ChineseLearning.Infrastructure;
 
@@ -24,7 +24,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-        services.AddIdentityCore<ApplicationUser>(options =>
+        services.AddIdentityCore<DomainApplicationUser>(options =>
         {
             options.User.RequireUniqueEmail = true;
             options.SignIn.RequireConfirmedEmail = false;
