@@ -55,7 +55,7 @@ export default function RootLayout({
     { name: "Tổng quan", path: "/" },
     { name: "Từ vựng", path: "/vocabularies" },
     { name: "Bài học", path: "/lessons" },
-    { name: "Thùng rác", path: "/trash" }
+    { name: "Thùng rác", path: "/vocabularies/trash" }
   ];
 
   return (
