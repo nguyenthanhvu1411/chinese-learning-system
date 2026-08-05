@@ -64,7 +64,14 @@ public sealed class VocabularyConfiguration : IEntityTypeConfiguration<Vocabular
         builder.Property(x => x.MeaningVi).HasMaxLength(500).IsRequired();
         builder.Property(x => x.PartOfSpeech).HasMaxLength(80);
         builder.Property(x => x.AudioUrl).HasMaxLength(1000);
-        builder.HasIndex(x => new { x.Simplified, x.Pinyin, x.HskLevel }).IsUnique();
+        builder.Property(x => x.ImageUrl).HasMaxLength(1000);
+        
+        builder.HasIndex(x => new { x.Simplified, x.Pinyin, x.HskLevel })
+               .IsUnique()
+               .HasFilter("\"IsDeleted\" = false");
+               
+        builder.HasQueryFilter(x => !x.IsDeleted);
+        
         builder.HasOne(x => x.Topic).WithMany(x => x.Vocabularies).HasForeignKey(x => x.TopicId).OnDelete(DeleteBehavior.Restrict);
     }
 }

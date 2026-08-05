@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function AdminLogin() {
+export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,20 +18,19 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Đăng nhập thất bại. Vui lòng kiểm tra quyền truy cập.");
+        throw new Error(data.message || "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.");
       }
 
-      const data = await res.json();
-      localStorage.setItem("hanyu_admin_token", data.accessToken);
-      router.push("/");
+      // Automatically login or redirect to login
+      router.push("/login?registered=true");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -38,17 +39,21 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-admin px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-            HANYU <span className="text-primary-600">Admin</span>
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-500">
-            Hệ thống quản trị nội dung
-          </p>
-        </div>
-        <div className="admin-panel p-8">
+    <div className="min-h-[calc(100vh-64px)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-bg-main">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-ink-900">
+          Tạo tài khoản mới
+        </h2>
+        <p className="mt-2 text-center text-sm text-ink-500">
+          Đã có tài khoản?{" "}
+          <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
+            Đăng nhập ngay
+          </Link>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-subtle border border-ink-100 sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="p-3 bg-danger-50 border border-danger-500 text-danger-600 rounded-md text-sm">
@@ -57,25 +62,44 @@ export default function AdminLogin() {
             )}
             
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-800">
-                Email quản trị viên
+              <label htmlFor="name" className="block text-sm font-medium text-ink-800">
+                Họ và tên
+              </label>
+              <div className="mt-1">
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="input-field"
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-ink-800">
+                Địa chỉ Email
               </label>
               <div className="mt-1">
                 <input
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field"
-                  placeholder="admin@hanyu.edu.vn"
+                  placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-800">
+              <label htmlFor="password" className="block text-sm font-medium text-ink-800">
                 Mật khẩu
               </label>
               <div className="mt-1">
@@ -83,6 +107,7 @@ export default function AdminLogin() {
                   id="password"
                   name="password"
                   type="password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -98,7 +123,7 @@ export default function AdminLogin() {
                 disabled={isLoading}
                 className="w-full btn-primary justify-center"
               >
-                {isLoading ? "Đang xác thực..." : "Đăng nhập"}
+                {isLoading ? "Đang xử lý..." : "Đăng ký tài khoản"}
               </button>
             </div>
           </form>

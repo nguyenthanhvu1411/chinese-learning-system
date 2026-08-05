@@ -19,6 +19,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Development");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
@@ -26,7 +27,16 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(_dbContainer.GetConnectionString()));
+
+            services.RemoveAll(typeof(ChineseLearning.Application.Abstractions.Email.IEmailService));
+            services.AddScoped<ChineseLearning.Application.Abstractions.Email.IEmailService, DummyEmailService>();
         });
+    }
+
+    private sealed class DummyEmailService : ChineseLearning.Application.Abstractions.Email.IEmailService
+    {
+        public Task SendEmailVerificationAsync(string email, string token, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SendPasswordResetAsync(string email, string token, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     public Task InitializeAsync()
@@ -37,5 +47,14 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
     public new Task DisposeAsync()
     {
         return _dbContainer.StopAsync();
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await context.Database.EnsureDeletedAsync();
+        
+        await Services.InitialiseDatabaseAsync();
     }
 }

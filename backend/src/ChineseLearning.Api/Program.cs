@@ -8,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ChineseLearning.Application.Abstractions.Authentication.ICurrentUserService, ChineseLearning.Api.Services.CurrentUserService>();
+builder.Services.AddExceptionHandler<ChineseLearning.Api.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddControllers();

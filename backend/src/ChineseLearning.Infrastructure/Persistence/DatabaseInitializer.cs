@@ -16,5 +16,8 @@ public static class DatabaseInitializer
 
         var identitySeeder = scope.ServiceProvider.GetRequiredService<IdentitySeeder>();
         await identitySeeder.SeedAsync(cancellationToken);
+
+        var hsk1Seeder = scope.ServiceProvider.GetRequiredService<Hsk1Seeder>();
+        await hsk1Seeder.SeedAsync(cancellationToken);
     }
 }

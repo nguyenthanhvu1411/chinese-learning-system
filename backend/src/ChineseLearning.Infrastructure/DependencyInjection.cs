@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IdentitySeeder>();
+        services.AddScoped<Hsk1Seeder>();
         return services;
     }
 }

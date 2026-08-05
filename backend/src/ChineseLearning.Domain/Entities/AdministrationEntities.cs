@@ -45,4 +45,18 @@ public sealed class AuditLog : Entity
     public string? BeforeJson { get; private set; }
     public string? AfterJson { get; private set; }
     public string? IpAddress { get; private set; }
+
+    public static AuditLog Create(Guid? actorUserId, string action, string entityType, string? entityId, string? beforeJson, string? afterJson, string? ipAddress = null)
+    {
+        return new AuditLog
+        {
+            ActorUserId = actorUserId,
+            Action = action,
+            EntityType = entityType,
+            EntityId = entityId,
+            BeforeJson = beforeJson,
+            AfterJson = afterJson,
+            IpAddress = ipAddress
+        };
+    }
 }

@@ -17,19 +17,27 @@ public sealed class AuthService(
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
     {
-        var email = request.Email.Trim().ToLowerInvariant();
-        if (await userManager.FindByEmailAsync(email) is not null)
-            throw new InvalidOperationException("Email đã được sử dụng.");
+        try
+        {
+            var email = request.Email.Trim().ToLowerInvariant();
+            if (await userManager.FindByEmailAsync(email) is not null)
+                throw new InvalidOperationException("Email đã được sử dụng.");
 
-        var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = email, Email = email };
-        user.SetDisplayName(request.DisplayName);
+            var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = email, Email = email };
+            user.SetDisplayName(request.DisplayName);
 
-        EnsureIdentitySucceeded(await userManager.CreateAsync(user, request.Password));
-        EnsureIdentitySucceeded(await userManager.AddToRoleAsync(user, Roles.User));
+            EnsureIdentitySucceeded(await userManager.CreateAsync(user, request.Password));
+            EnsureIdentitySucceeded(await userManager.AddToRoleAsync(user, Roles.User));
 
-        var verificationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        await emailService.SendEmailVerificationAsync(user.Email!, verificationToken, cancellationToken);
-        return await IssueTokensAsync(user, cancellationToken);
+            var verificationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            await emailService.SendEmailVerificationAsync(user.Email!, verificationToken, cancellationToken);
+            return await IssueTokensAsync(user, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            System.IO.File.WriteAllText("auth_error.log", ex.ToString());
+            throw;
+        }
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
@@ -120,6 +128,10 @@ public sealed class AuthService(
     private static void EnsureIdentitySucceeded(IdentityResult result)
     {
         if (!result.Succeeded)
-            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
+        {
+            var errors = string.Join("; ", result.Errors.Select(x => x.Description));
+            Console.WriteLine("IDENTITY ERROR: " + errors);
+            throw new InvalidOperationException(errors);
+        }
     }
 }

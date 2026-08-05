@@ -1,106 +1,128 @@
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { API_BASE_URL } from "../../../lib/api";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default async function NewVocabularyPage() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("accessToken")?.value;
-  if (!token) redirect("/login");
+export default function CreateVocabulary() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    simplified: "",
+    traditional: "",
+    pinyin: "",
+    meaning: "",
+    topic: "",
+    hskLevel: "",
+    isPublished: false
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function createVocabulary(formData: FormData) {
-    "use server";
-    
-    const data = {
-      simplified: formData.get("simplified") as string,
-      traditional: formData.get("traditional") as string || null,
-      pinyin: formData.get("pinyin") as string,
-      meaningVi: formData.get("meaningVi") as string,
-      partOfSpeech: formData.get("partOfSpeech") as string || null,
-      hskLevel: parseInt(formData.get("hskLevel") as string, 10),
-      topicId: "00000000-0000-0000-0000-000000000000", // Default empty GUID
-      status: formData.get("status") as string
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get("accessToken")?.value;
-    
-    const response = await fetch(`${API_BASE_URL}/api/v1/admin/vocabularies`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    if (response.ok) {
-      redirect("/vocabularies");
+    try {
+      const token = localStorage.getItem("hanyu_admin_token");
+      
+      const payload = {
+        ...formData,
+        hskLevel: formData.hskLevel ? parseInt(formData.hskLevel) : null,
+        examples: [] // MVP default empty
+      };
+
+      const res = await fetch("/api/v1/vocabularies", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Lỗi khi tạo từ vựng.");
+      }
+
+      router.push("/vocabularies");
+    } catch (err: any) {
+      setError(err.message);
+      setIsLoading(false);
     }
-    // Simple MVP error handling
-  }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center space-x-4">
         <Link href="/vocabularies" className="text-slate-500 hover:text-slate-900">
-          ← Back
+          &larr; Quay lại
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">Add New Vocabulary</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Thêm từ vựng mới</h1>
       </div>
 
       <div className="admin-panel p-6">
-        <form action={createVocabulary} className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+        {error && (
+          <div className="mb-6 p-4 bg-danger-50 text-danger-600 rounded-md border border-danger-200">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Simplified (Required)</label>
-              <input type="text" name="simplified" required className="input-field font-serif text-lg" />
+              <label htmlFor="simplified" className="block text-sm font-medium text-slate-700">Chữ Hán (Giản thể) *</label>
+              <input type="text" name="simplified" id="simplified" required value={formData.simplified} onChange={handleChange} className="mt-1 input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Traditional</label>
-              <input type="text" name="traditional" className="input-field font-serif text-lg" />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Pinyin (Required)</label>
-              <input type="text" name="pinyin" required className="input-field" />
+              <label htmlFor="traditional" className="block text-sm font-medium text-slate-700">Phồn thể (Tuỳ chọn)</label>
+              <input type="text" name="traditional" id="traditional" value={formData.traditional} onChange={handleChange} className="mt-1 input-field" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Part of Speech</label>
-              <input type="text" name="partOfSpeech" className="input-field" placeholder="e.g. noun, verb" />
+              <label htmlFor="pinyin" className="block text-sm font-medium text-slate-700">Pinyin *</label>
+              <input type="text" name="pinyin" id="pinyin" required value={formData.pinyin} onChange={handleChange} className="mt-1 input-field" />
+            </div>
+            <div>
+              <label htmlFor="hskLevel" className="block text-sm font-medium text-slate-700">Cấp độ HSK</label>
+              <select name="hskLevel" id="hskLevel" value={formData.hskLevel} onChange={handleChange} className="mt-1 input-field">
+                <option value="">Không phân cấp</option>
+                {[1,2,3,4,5,6,7,8,9].map(level => (
+                  <option key={level} value={level}>HSK {level}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Meaning (Vietnamese) (Required)</label>
-            <textarea name="meaningVi" required rows={3} className="input-field"></textarea>
+            <label htmlFor="meaning" className="block text-sm font-medium text-slate-700">Nghĩa tiếng Việt *</label>
+            <input type="text" name="meaning" id="meaning" required value={formData.meaning} onChange={handleChange} className="mt-1 input-field" />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">HSK Level</label>
-              <select name="hskLevel" defaultValue="1" className="input-field">
-                {[1, 2, 3, 4, 5, 6].map(l => (
-                  <option key={l} value={l}>HSK {l}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-              <select name="status" defaultValue="Published" className="input-field">
-                <option value="Draft">Draft</option>
-                <option value="Published">Published</option>
-                <option value="Archived">Archived</option>
-              </select>
-            </div>
+          <div>
+            <label htmlFor="topic" className="block text-sm font-medium text-slate-700">Chủ đề (Topic)</label>
+            <input type="text" name="topic" id="topic" value={formData.topic} onChange={handleChange} className="mt-1 input-field" />
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
-            <Link href="/vocabularies" className="btn-secondary">
-              Cancel
-            </Link>
-            <button type="submit" className="btn-primary">
-              Save Vocabulary
+          <div className="flex items-center mt-4">
+            <input type="checkbox" name="isPublished" id="isPublished" checked={formData.isPublished} onChange={handleChange} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-slate-300 rounded" />
+            <label htmlFor="isPublished" className="ml-2 block text-sm text-slate-900">
+              Xuất bản ngay (Hiển thị cho người dùng)
+            </label>
+          </div>
+
+          <div className="pt-5 border-t border-slate-200 flex justify-end space-x-3">
+            <Link href="/vocabularies" className="btn-secondary">Hủy</Link>
+            <button type="submit" disabled={isLoading} className="btn-primary">
+              {isLoading ? "Đang lưu..." : "Lưu từ vựng"}
             </button>
           </div>
         </form>

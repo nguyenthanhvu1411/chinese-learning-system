@@ -12,6 +12,16 @@ public sealed class Topic : Entity
     public ContentStatus Status { get; private set; } = ContentStatus.Draft;
     public ICollection<Vocabulary> Vocabularies { get; private set; } = new List<Vocabulary>();
     public ICollection<Lesson> Lessons { get; private set; } = new List<Lesson>();
+
+    public static Topic Create(string nameVi, string? descriptionVi)
+    {
+        return new Topic
+        {
+            NameVi = nameVi,
+            DescriptionVi = descriptionVi,
+            Slug = nameVi.ToLower().Replace(" ", "-")
+        };
+    }
 }
 
 public sealed class Vocabulary : Entity
@@ -23,11 +33,75 @@ public sealed class Vocabulary : Entity
     public string MeaningVi { get; private set; } = string.Empty;
     public string? PartOfSpeech { get; private set; }
     public string? AudioUrl { get; private set; }
+    public string? ImageUrl { get; private set; }
     public int HskLevel { get; private set; } = 1;
     public ContentStatus Status { get; private set; } = ContentStatus.Draft;
+    
+    // Soft Delete
+    public bool IsDeleted { get; private set; }
+    public DateTimeOffset? DeletedAt { get; private set; }
+
     public Topic Topic { get; private set; } = null!;
     public ICollection<VocabularyExample> Examples { get; private set; } = new List<VocabularyExample>();
     public ICollection<LessonVocabulary> Lessons { get; private set; } = new List<LessonVocabulary>();
+
+    private Vocabulary() { } // EF Core
+
+    public static Vocabulary Create(long topicId, string simplified, string? traditional, string pinyin, string meaningVi, int hskLevel)
+    {
+        return new Vocabulary
+        {
+            TopicId = topicId,
+            Simplified = simplified,
+            Traditional = traditional,
+            Pinyin = pinyin,
+            MeaningVi = meaningVi,
+            HskLevel = hskLevel,
+            Status = ContentStatus.Draft,
+            IsDeleted = false
+        };
+    }
+
+    public void Update(string simplified, string? traditional, string pinyin, string meaningVi, string? partOfSpeech, string? audioUrl, string? imageUrl, int hskLevel)
+    {
+        Simplified = simplified;
+        Traditional = traditional;
+        Pinyin = pinyin;
+        MeaningVi = meaningVi;
+        PartOfSpeech = partOfSpeech;
+        AudioUrl = audioUrl;
+        ImageUrl = imageUrl;
+        HskLevel = hskLevel;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        if (IsDeleted) return;
+        IsDeleted = true;
+        DeletedAt = DateTimeOffset.UtcNow;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Restore()
+    {
+        if (!IsDeleted) return;
+        IsDeleted = false;
+        DeletedAt = null;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Publish()
+    {
+        Status = ContentStatus.Published;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Unpublish()
+    {
+        Status = ContentStatus.Draft;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }
 
 public sealed class VocabularyExample : Entity
