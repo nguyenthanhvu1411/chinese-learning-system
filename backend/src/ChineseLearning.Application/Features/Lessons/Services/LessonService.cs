@@ -18,14 +18,14 @@ public sealed class LessonService(
     IValidator<UpdateVocabularyOrderRequest> orderValidator,
     ICurrentUserService currentUserService) : ILessonService
 {
-    public async Task<LessonWithVocabulariesDto> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<LessonWithVocabulariesDto> GetByIdAsync(Guid publicId, CancellationToken cancellationToken)
     {
         var lesson = await dbContext.Lessons
             .Include(x => x.Topic)
             .Include(x => x.Vocabularies)
             .ThenInclude(lv => lv.Vocabulary)
             .ThenInclude(v => v.Topic)
-            .SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+            .SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
             
         return MapToWithVocabulariesDto(lesson);
@@ -95,11 +95,11 @@ public sealed class LessonService(
         return MapToDto(lesson, request.TopicId);
     }
 
-    public async Task<LessonDto> UpdateAsync(Guid id, UpdateLessonRequest request, CancellationToken cancellationToken)
+    public async Task<LessonDto> UpdateAsync(Guid publicId, UpdateLessonRequest request, CancellationToken cancellationToken)
     {
         await updateValidator.ValidateAndThrowAsync(request, cancellationToken);
 
-        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         var topic = await dbContext.Topics.SingleOrDefaultAsync(x => x.PublicId == request.TopicId, cancellationToken)
@@ -121,83 +121,83 @@ public sealed class LessonService(
 
         lesson.Update(request.TitleVi, request.DescriptionVi, request.EstimatedMinutes, request.SortOrder);
         
-        LogAudit("UPDATE", "Lesson", id.ToString(), beforeJson, JsonSerializer.Serialize(request));
+        LogAudit("UPDATE", "Lesson", publicId.ToString(), beforeJson, JsonSerializer.Serialize(request));
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapToDto(lesson);
     }
 
-    public async Task<LessonDto> SoftDeleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<LessonDto> SoftDeleteAsync(Guid publicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         var beforeJson = JsonSerializer.Serialize(MapToDto(lesson));
         lesson.SoftDelete();
         
-        LogAudit("SOFT_DELETE", "Lesson", id.ToString(), beforeJson, null);
+        LogAudit("SOFT_DELETE", "Lesson", publicId.ToString(), beforeJson, null);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapToDto(lesson);
     }
 
-    public async Task<LessonDto> RestoreAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<LessonDto> RestoreAsync(Guid publicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.IgnoreQueryFilters().Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id && x.IsDeleted, cancellationToken)
+        var lesson = await dbContext.Lessons.IgnoreQueryFilters().Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId && x.IsDeleted, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found in trash.");
 
         lesson.Restore();
         
-        LogAudit("RESTORE", "Lesson", id.ToString(), null, null);
+        LogAudit("RESTORE", "Lesson", publicId.ToString(), null, null);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapToDto(lesson);
     }
 
-    public async Task PermanentDeleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task PermanentDeleteAsync(Guid publicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.IgnoreQueryFilters().Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+        var lesson = await dbContext.Lessons.IgnoreQueryFilters().Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         var beforeJson = JsonSerializer.Serialize(MapToDto(lesson));
         dbContext.Lessons.Remove(lesson);
         
-        LogAudit("PERMANENT_DELETE", "Lesson", id.ToString(), beforeJson, null);
+        LogAudit("PERMANENT_DELETE", "Lesson", publicId.ToString(), beforeJson, null);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<LessonDto> PublishAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<LessonDto> PublishAsync(Guid publicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         lesson.Publish();
         
-        LogAudit("PUBLISH", "Lesson", id.ToString(), null, null);
+        LogAudit("PUBLISH", "Lesson", publicId.ToString(), null, null);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapToDto(lesson);
     }
 
-    public async Task<LessonDto> UnpublishAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<LessonDto> UnpublishAsync(Guid publicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == id, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Topic).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         lesson.Unpublish();
         
-        LogAudit("UNPUBLISH", "Lesson", id.ToString(), null, null);
+        LogAudit("UNPUBLISH", "Lesson", publicId.ToString(), null, null);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return MapToDto(lesson);
     }
 
-    public async Task AssignVocabularyAsync(Guid lessonId, AssignVocabularyRequest request, CancellationToken cancellationToken)
+    public async Task AssignVocabularyAsync(Guid publicId, AssignVocabularyRequest request, CancellationToken cancellationToken)
     {
         await assignValidator.ValidateAndThrowAsync(request, cancellationToken);
 
-        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).SingleOrDefaultAsync(x => x.PublicId == lessonId, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         var vocabulary = await dbContext.Vocabularies.SingleOrDefaultAsync(x => x.PublicId == request.VocabularyId, cancellationToken)
@@ -211,30 +211,30 @@ public sealed class LessonService(
         var lessonVocabulary = LessonVocabulary.Create(lesson.Id, vocabulary.Id, request.SortOrder);
 
         lesson.Vocabularies.Add(lessonVocabulary);
-        LogAudit("ASSIGN_VOCABULARY", "Lesson", lessonId.ToString(), null, JsonSerializer.Serialize(request));
+        LogAudit("ASSIGN_VOCABULARY", "Lesson", publicId.ToString(), null, JsonSerializer.Serialize(request));
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task RemoveVocabularyAsync(Guid lessonId, Guid vocabularyId, CancellationToken cancellationToken)
+    public async Task RemoveVocabularyAsync(Guid publicId, Guid vocabularyPublicId, CancellationToken cancellationToken)
     {
-        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).ThenInclude(x => x.Vocabulary).SingleOrDefaultAsync(x => x.PublicId == lessonId, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).ThenInclude(x => x.Vocabulary).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
-        var lessonVocab = lesson.Vocabularies.SingleOrDefault(x => x.Vocabulary.PublicId == vocabularyId)
+        var lessonVocab = lesson.Vocabularies.SingleOrDefault(x => x.Vocabulary.PublicId == vocabularyPublicId)
             ?? throw new KeyNotFoundException("Vocabulary not found in this lesson.");
 
-        lesson.Vocabularies.Remove(lessonVocab);
-        LogAudit("REMOVE_VOCABULARY", "Lesson", lessonId.ToString(), null, vocabularyId.ToString());
+        dbContext.LessonVocabularies.Remove(lessonVocab);
+        LogAudit("REMOVE_VOCABULARY", "Lesson", publicId.ToString(), null, JsonSerializer.Serialize(new { VocabularyId = vocabularyPublicId }));
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateVocabularyOrderAsync(Guid lessonId, UpdateVocabularyOrderRequest request, CancellationToken cancellationToken)
+    public async Task UpdateVocabularyOrderAsync(Guid publicId, UpdateVocabularyOrderRequest request, CancellationToken cancellationToken)
     {
         await orderValidator.ValidateAndThrowAsync(request, cancellationToken);
 
-        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).ThenInclude(x => x.Vocabulary).SingleOrDefaultAsync(x => x.PublicId == lessonId, cancellationToken)
+        var lesson = await dbContext.Lessons.Include(x => x.Vocabularies).ThenInclude(x => x.Vocabulary).SingleOrDefaultAsync(x => x.PublicId == publicId, cancellationToken)
             ?? throw new KeyNotFoundException("Lesson not found.");
 
         int order = 0;
@@ -248,7 +248,7 @@ public sealed class LessonService(
             order++;
         }
 
-        LogAudit("UPDATE_VOCAB_ORDER", "Lesson", lessonId.ToString(), null, JsonSerializer.Serialize(request));
+        LogAudit("UPDATE_VOCAB_ORDER", "Lesson", publicId.ToString(), null, JsonSerializer.Serialize(request));
         
         await dbContext.SaveChangesAsync(cancellationToken);
     }

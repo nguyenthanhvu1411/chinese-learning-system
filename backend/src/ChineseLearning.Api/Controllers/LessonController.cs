@@ -1,6 +1,7 @@
 using ChineseLearning.Application.Common.Models;
 using ChineseLearning.Application.Features.Lessons.DTOs;
 using ChineseLearning.Application.Features.Lessons.Services;
+using ChineseLearning.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +9,7 @@ namespace ChineseLearning.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/lessons")]
-[Authorize] // Assuming admin only for now. Add policy if needed.
+[Authorize(Roles = $"{Roles.ContentEditor},{Roles.Admin},{Roles.SuperAdmin}")]
 public class LessonController(ILessonService lessonService) : ControllerBase
 {
     [HttpGet]
@@ -27,10 +28,10 @@ public class LessonController(ILessonService lessonService) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<LessonWithVocabulariesDto>> GetById(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{publicId:guid}")]
+    public async Task<ActionResult<LessonWithVocabulariesDto>> GetById(Guid publicId, CancellationToken cancellationToken)
     {
-        var result = await lessonService.GetByIdAsync(id, cancellationToken);
+        var result = await lessonService.GetByIdAsync(publicId, cancellationToken);
         return Ok(result);
     }
 
@@ -38,69 +39,70 @@ public class LessonController(ILessonService lessonService) : ControllerBase
     public async Task<ActionResult<LessonDto>> Create([FromBody] CreateLessonRequest request, CancellationToken cancellationToken)
     {
         var result = await lessonService.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { publicId = result.Id }, result);
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<LessonDto>> Update(Guid id, [FromBody] UpdateLessonRequest request, CancellationToken cancellationToken)
+    [HttpPut("{publicId:guid}")]
+    public async Task<ActionResult<LessonDto>> Update(Guid publicId, [FromBody] UpdateLessonRequest request, CancellationToken cancellationToken)
     {
-        var result = await lessonService.UpdateAsync(id, request, cancellationToken);
+        var result = await lessonService.UpdateAsync(publicId, request, cancellationToken);
         return Ok(result);
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<ActionResult<LessonDto>> SoftDelete(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{publicId:guid}")]
+    public async Task<ActionResult<LessonDto>> SoftDelete(Guid publicId, CancellationToken cancellationToken)
     {
-        var result = await lessonService.SoftDeleteAsync(id, cancellationToken);
+        var result = await lessonService.SoftDeleteAsync(publicId, cancellationToken);
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/restore")]
-    public async Task<ActionResult<LessonDto>> Restore(Guid id, CancellationToken cancellationToken)
+    [HttpPost("{publicId:guid}/restore")]
+    public async Task<ActionResult<LessonDto>> Restore(Guid publicId, CancellationToken cancellationToken)
     {
-        var result = await lessonService.RestoreAsync(id, cancellationToken);
+        var result = await lessonService.RestoreAsync(publicId, cancellationToken);
         return Ok(result);
     }
 
-    [HttpDelete("{id:guid}/permanent")]
-    public async Task<IActionResult> PermanentDelete(Guid id, CancellationToken cancellationToken)
+    [Authorize(Roles = Roles.SuperAdmin)]
+    [HttpDelete("{publicId:guid}/permanent")]
+    public async Task<IActionResult> PermanentDelete(Guid publicId, CancellationToken cancellationToken)
     {
-        await lessonService.PermanentDeleteAsync(id, cancellationToken);
+        await lessonService.PermanentDeleteAsync(publicId, cancellationToken);
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/publish")]
-    public async Task<ActionResult<LessonDto>> Publish(Guid id, CancellationToken cancellationToken)
+    [HttpPost("{publicId:guid}/publish")]
+    public async Task<ActionResult<LessonDto>> Publish(Guid publicId, CancellationToken cancellationToken)
     {
-        var result = await lessonService.PublishAsync(id, cancellationToken);
+        var result = await lessonService.PublishAsync(publicId, cancellationToken);
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/unpublish")]
-    public async Task<ActionResult<LessonDto>> Unpublish(Guid id, CancellationToken cancellationToken)
+    [HttpPost("{publicId:guid}/unpublish")]
+    public async Task<ActionResult<LessonDto>> Unpublish(Guid publicId, CancellationToken cancellationToken)
     {
-        var result = await lessonService.UnpublishAsync(id, cancellationToken);
+        var result = await lessonService.UnpublishAsync(publicId, cancellationToken);
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/vocabularies")]
-    public async Task<IActionResult> AssignVocabulary(Guid id, [FromBody] AssignVocabularyRequest request, CancellationToken cancellationToken)
+    [HttpPost("{publicId:guid}/vocabularies")]
+    public async Task<IActionResult> AssignVocabulary(Guid publicId, [FromBody] AssignVocabularyRequest request, CancellationToken cancellationToken)
     {
-        await lessonService.AssignVocabularyAsync(id, request, cancellationToken);
+        await lessonService.AssignVocabularyAsync(publicId, request, cancellationToken);
         return Ok();
     }
 
-    [HttpDelete("{id:guid}/vocabularies/{vocabularyId:guid}")]
-    public async Task<IActionResult> RemoveVocabulary(Guid id, Guid vocabularyId, CancellationToken cancellationToken)
+    [HttpDelete("{publicId:guid}/vocabularies/{vocabularyPublicId:guid}")]
+    public async Task<IActionResult> RemoveVocabulary(Guid publicId, Guid vocabularyPublicId, CancellationToken cancellationToken)
     {
-        await lessonService.RemoveVocabularyAsync(id, vocabularyId, cancellationToken);
+        await lessonService.RemoveVocabularyAsync(publicId, vocabularyPublicId, cancellationToken);
         return Ok();
     }
 
-    [HttpPut("{id:guid}/vocabularies/order")]
-    public async Task<IActionResult> UpdateVocabularyOrder(Guid id, [FromBody] UpdateVocabularyOrderRequest request, CancellationToken cancellationToken)
+    [HttpPut("{publicId:guid}/vocabularies/order")]
+    public async Task<IActionResult> UpdateVocabularyOrder(Guid publicId, [FromBody] UpdateVocabularyOrderRequest request, CancellationToken cancellationToken)
     {
-        await lessonService.UpdateVocabularyOrderAsync(id, request, cancellationToken);
+        await lessonService.UpdateVocabularyOrderAsync(publicId, request, cancellationToken);
         return Ok();
     }
 }

@@ -36,7 +36,8 @@ export default function LessonDetail() {
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const res = await fetch(`/api/v1/lessons/${slug}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7196";
+        const res = await fetch(`${apiUrl}/api/v1/lessons/${slug}`);
         
         if (!res.ok) {
           if (res.status === 404) {

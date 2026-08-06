@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { BookOpen, Clock, ChevronRight } from "lucide-react";
+import { BookOpen, Clock, ChevronRight, GraduationCap } from "lucide-react";
 
 interface Lesson {
   id: string;
@@ -53,7 +53,8 @@ function LessonListContent() {
           queryParams.append("topic", topic);
         }
         
-        const res = await fetch(`/api/v1/lessons?${queryParams.toString()}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7196";
+        const res = await fetch(`${apiUrl}/api/v1/lessons?${queryParams.toString()}`);
         
         if (!res.ok) {
           throw new Error("Không thể tải danh sách bài học. Vui lòng thử lại sau.");

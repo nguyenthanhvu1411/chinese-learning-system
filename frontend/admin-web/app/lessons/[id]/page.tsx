@@ -59,6 +59,7 @@ export default function LessonDetail() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (id) fetchLesson();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

@@ -51,7 +51,8 @@ function VocabularyListContent() {
           queryParams.append("searchTerm", searchTerm);
         }
         
-        const res = await fetch(`/api/v1/public/vocabularies?${queryParams.toString()}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7196";
+        const res = await fetch(`${apiUrl}/api/v1/public/vocabularies?${queryParams.toString()}`);
         
         if (!res.ok) {
           throw new Error("Không thể tải danh sách từ vựng. Vui lòng thử lại sau.");

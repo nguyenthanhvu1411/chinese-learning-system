@@ -70,6 +70,7 @@ function AdminLessonTrashListContent() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTrash();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
