@@ -304,8 +304,59 @@ public sealed class LessonEndpointTests : IClassFixture<IntegrationTestWebAppFac
         detailAfterRemove!.Vocabularies.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task UpdateLesson_Success()
+    {
+        var token = await GetAdminTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
+        var topic = await EnsureTopicExistsAsync();
+        var createRequest = new CreateLessonRequest(topic.PublicId, "Lesson to Update", "Desc", 10, 1);
+        var createResponse = await _client.PostAsJsonAsync("/api/v1/admin/lessons", createRequest);
+        var created = await createResponse.Content.ReadFromJsonAsync<LessonDto>();
 
+        var updateRequest = new UpdateLessonRequest(topic.PublicId, "Updated Lesson", "Updated Desc", 15, 2);
+        var updateResponse = await _client.PutAsJsonAsync($"/api/v1/admin/lessons/{created!.Id}", updateRequest);
+        
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<LessonDto>();
+        updated!.TitleVi.Should().Be("Updated Lesson");
+        updated.DescriptionVi.Should().Be("Updated Desc");
+    }
+
+    [Fact]
+    public async Task UpdateVocabularyOrder_Success()
+    {
+        var token = await GetAdminTokenAsync();
+        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var topic = await EnsureTopicExistsAsync();
+        var lessonRequest = new CreateLessonRequest(topic.PublicId, "Lesson Order Vocab", "Desc", 10, 1);
+        var lessonResponse = await _client.PostAsJsonAsync("/api/v1/admin/lessons", lessonRequest);
+        var lesson = await lessonResponse.Content.ReadFromJsonAsync<LessonDto>();
+
+        var vocab1 = await CreateVocabularyAsync(topic.PublicId, token);
+        var vocab2Req = new CreateVocabularyRequest(topic.PublicId, "猫", null, "māo", "cat", "noun", null, null, 1);
+        var vocab2Res = await _client.PostAsJsonAsync("/api/v1/admin/vocabularies", vocab2Req);
+        var vocab2 = await vocab2Res.Content.ReadFromJsonAsync<VocabularyDto>();
+
+        // Assign both
+        await _client.PostAsJsonAsync($"/api/v1/admin/lessons/{lesson!.Id}/vocabularies", new AssignVocabularyRequest(vocab1.Id, 0));
+        await _client.PostAsJsonAsync($"/api/v1/admin/lessons/{lesson.Id}/vocabularies", new AssignVocabularyRequest(vocab2!.Id, 1));
+
+        // Reorder: vocab2 first, vocab1 second
+        var updateOrderReq = new UpdateVocabularyOrderRequest(new List<Guid> { vocab2.Id, vocab1.Id });
+        var updateOrderRes = await _client.PutAsJsonAsync($"/api/v1/admin/lessons/{lesson.Id}/vocabularies/order", updateOrderReq);
+        updateOrderRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Verify order
+        var detailResponse = await _client.GetAsync($"/api/v1/admin/lessons/{lesson.Id}");
+        var detail = await detailResponse.Content.ReadFromJsonAsync<LessonWithVocabulariesDto>();
+        
+        detail!.Vocabularies.Count.Should().Be(2);
+        detail.Vocabularies[0].Id.Should().Be(vocab2.Id);
+        detail.Vocabularies[1].Id.Should().Be(vocab1.Id);
+    }
     [Fact]
     public async Task GetPublicLessons_ReturnsOnlyPublishedAndNonDeleted()
     {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import { fetchApi } from "../../lib/api";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -51,15 +52,8 @@ function VocabularyListContent() {
           queryParams.append("searchTerm", searchTerm);
         }
         
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7196";
-        const res = await fetch(`${apiUrl}/api/v1/public/vocabularies?${queryParams.toString()}`);
-        
-        if (!res.ok) {
-          throw new Error("Không thể tải danh sách từ vựng. Vui lòng thử lại sau.");
-        }
-        
-        const result = await res.json();
-        setData(result);
+        const res = await fetchApi<PagedResult>(`/api/v1/public/vocabularies?${queryParams.toString()}`);
+        setData(res);
         
         // Update URL
         const url = new URL(window.location.href);

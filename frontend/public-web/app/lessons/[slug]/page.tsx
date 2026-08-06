@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Clock, BookOpen, Volume2, ArrowRight } from "lucide-react";
+import { fetchApi } from "../../../lib/api";
 
 interface Vocabulary {
   id: string;
@@ -36,17 +37,7 @@ export default function LessonDetail() {
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7196";
-        const res = await fetch(`${apiUrl}/api/v1/lessons/${slug}`);
-        
-        if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error("Không tìm thấy bài học này.");
-          }
-          throw new Error("Không thể tải thông tin bài học.");
-        }
-        
-        const result = await res.json();
+        const result = await fetchApi<LessonDetail>(`/api/v1/lessons/${slug}`);
         setData(result);
       } catch (err: any) {
         setError(err.message);
