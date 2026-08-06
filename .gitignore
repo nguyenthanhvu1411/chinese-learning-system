@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+build/
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
