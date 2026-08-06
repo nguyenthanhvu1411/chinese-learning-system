@@ -98,6 +98,9 @@ public sealed class LessonConfiguration : IEntityTypeConfiguration<Lesson>
         builder.HasIndex(x => x.Slug).IsUnique();
         builder.Property(x => x.TitleVi).HasMaxLength(250).IsRequired();
         builder.Property(x => x.DescriptionVi).HasMaxLength(1500);
+        
+        builder.HasQueryFilter(x => !x.IsDeleted);
+        
         builder.HasOne(x => x.Topic).WithMany(x => x.Lessons).HasForeignKey(x => x.TopicId).OnDelete(DeleteBehavior.Restrict);
     }
 }
